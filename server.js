@@ -1,5 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
@@ -10,13 +12,31 @@ let pairingCode = null;
 
 const PORT = process.env.PORT || 3000;
 
-// FULL ANTIBAN & RENDER COMPATIBLE PUPPETEER CONFIGURATION
+// --- RENDER ENVIRONMENT DYNAMIC CHROMIUM FINDER ---
+let chromePath = null;
+
+// Render default cache paths check logic
+const potentialPaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
+    '/opt/render/.cache/puppeteer'
+];
+
+for (const p of potentialPaths) {
+    if (p && fs.existsSync(p) && fs.lstatSync(p).isFile()) {
+        chromePath = p;
+        break;
+    }
+}
+
+console.log(chromePath ? `Using detected Chrome binary at: ${chromePath}` : 'Chrome path not forced, relying on default puppeteer resolver.');
+
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        // Render environment validation fix
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, 
+        // Force path if explicitly found on Render storage
+        ...(chromePath && { executablePath: chromePath }),
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -26,19 +46,15 @@ const client = new Client({
             '--no-zygote',
             '--single-process',
             '--disable-gpu',
-            // --- ANTIBAN STEALTH ARGUMENTS ---
-            '--disable-blink-features=AutomationControlled', // Hides webdriver status
-            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' // Custom human user agent
+            '--disable-blink-features=AutomationControlled',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         ]
     }
 });
 
-// Human-like organic delays bypass script pattern
-const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-
 client.on('qr', (qr) => {
     isClientReady = false;
-    console.log('Engine ready. Waiting for Phone Number input...');
+    console.log('Engine initialized successfully. Web UI ready for connection.');
 });
 
 client.on('ready', () => {
@@ -54,7 +70,7 @@ client.on('disconnected', (reason) => {
     client.initialize();
 });
 
-// Dashboard UI
+// Main Dashboard Web UI
 app.get('/', (req, res) => {
     if (isClientReady) {
         return res.send(`
@@ -102,7 +118,6 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Request Linking Code
 app.post('/request-code', async (req, res) => {
     const targetPhone = req.body.phone;
     if (!targetPhone) return res.send('Phone number missing. <a href="/">Back</a>');
@@ -110,7 +125,6 @@ app.post('/request-code', async (req, res) => {
     try {
         let cleanPhone = targetPhone.replace(/[^0-9]/g, '');
         if (client.pupPage) {
-            // Anti-detection buffer wait
             await new Promise(resolve => setTimeout(resolve, 2000));
             pairingCode = await client.requestPairingCode(cleanPhone);
             res.redirect('/');
@@ -126,7 +140,6 @@ app.get('/status-check', (req, res) => {
     res.json({ ready: isClientReady });
 });
 
-// Safe API endpoint with human simulation logic
 app.post('/send-sms', async (req, res) => {
     const { phone, message } = req.body;
 
@@ -137,9 +150,6 @@ app.post('/send-sms', async (req, res) => {
         let cleanPhone = phone.replace(/[^0-9]/g, '');
         const formattedPhone = `${cleanPhone}@c.us`;
 
-        // Antiban: Adds organic typed layout timing behavior simulation
-        await new Promise(resolve => setTimeout(resolve, randomDelay(1000, 3000)));
-        
         await client.sendMessage(formattedPhone, message);
         return res.json({ success: true, message: "Dispatched safely." });
     } catch (err) {
