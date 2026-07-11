@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CortexHost • WhatsApp Notifier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen" class="screen">
+  <div class="bg-grid"></div>
+  <div class="glass-card login-card">
+    <div class="brand">
+      <span class="brand-mark">CH</span>
+      <div>
+        <h1>CortexHost</h1>
+        <p class="eyebrow">WhatsApp Notifier Bridge</p>
+      </div>
+    </div>
+    <p class="login-sub">Enter the admin password to access the connection panel.</p>
+    <input id="loginPassword" type="password" placeholder="Admin password" autocomplete="current-password">
+    <button id="loginBtn" class="btn btn-primary">Unlock Dashboard</button>
+    <p id="loginError" class="error-text"></p>
+  </div>
+</div>
+
+<!-- ============ MAIN DASHBOARD ============ -->
+<div id="dashboardScreen" class="screen" style="display:none;">
+  <div class="bg-grid"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">CH</span>
+      <div>
+        <h1>WhatsApp Notifier</h1>
+        <p class="eyebrow">CortexHost / digital.cortexhost.in</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="statusPill" class="status-pill status-disconnected">
+        <span class="dot"></span> Disconnected
+      </span>
+      <button id="logoutSessionBtn" class="btn btn-ghost">Sign out</button>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <!-- Connection Panel -->
+    <section class="glass-card panel connection-panel">
+      <div class="panel-head">
+        <h2>Link WhatsApp</h2>
+        <p class="muted">Connect the number that will send all WHMCS alerts. No official WhatsApp Business API needed — link it exactly like WhatsApp Web.</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="qr">QR Code</button>
+        <button class="tab-btn" data-tab="phone">Phone Number</button>
+      </div>
+
+      <div class="tab-panel" id="tab-qr">
+        <div class="qr-frame">
+          <div class="qr-scanline"></div>
+          <img id="qrImage" src="" alt="Scan with WhatsApp" style="display:none;">
+          <div id="qrPlaceholder" class="qr-placeholder">Waiting for QR…</div>
+        </div>
+        <p class="muted small">WhatsApp → Linked Devices → Link a Device → scan this code.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-phone" style="display:none;">
+        <input id="phoneInput" type="text" placeholder="e.g. 919876543210 (with country code)">
+        <button id="pairBtn" class="btn btn-primary">Generate Pairing Code</button>
+        <div id="pairingCodeBox" class="pairing-code" style="display:none;"></div>
+        <p class="muted small">WhatsApp → Linked Devices → Link a Device → Link with phone number instead → enter code.</p>
+      </div>
+
+      <div class="connection-footer">
+        <div class="linked-number" id="linkedNumberBox">
+          <span class="muted small">Linked number</span>
+          <span class="mono" id="linkedNumberValue">—</span>
+        </div>
+        <button id="resetBtn" class="btn btn-danger-ghost">Logout / Reset Session</button>
+      </div>
+    </section>
+
+    <!-- Test Message Panel -->
+    <section class="glass-card panel">
+      <div class="panel-head">
+        <h2>Send Test Alert</h2>
+        <p class="muted">Verify the bridge before wiring it to WHMCS.</p>
+      </div>
+      <input id="testTo" type="text" placeholder="Recipient number, e.g. 919876543210">
+      <textarea id="testMsg" rows="4" placeholder="Test message…">🚀 CortexHost Notifier test message. Aapka WhatsApp bridge sahi kaam kar raha hai.</textarea>
+      <button id="testSendBtn" class="btn btn-primary">Send Test Message</button>
+      <p id="testResult" class="result-text"></p>
+    </section>
+
+    <!-- API Info Panel -->
+    <section class="glass-card panel">
+      <div class="panel-head">
+        <h2>WHMCS Connection Info</h2>
+        <p class="muted">Paste these into the WhatsApp Notifier addon settings inside WHMCS.</p>
+      </div>
+      <div class="kv">
+        <span class="muted small">Bridge URL</span>
+        <span class="mono" id="bridgeUrlValue">—</span>
+      </div>
+      <div class="kv">
+        <span class="muted small">Endpoint</span>
+        <span class="mono">/api/send</span>
+      </div>
+      <div class="kv">
+        <span class="muted small">Header</span>
+        <span class="mono">x-api-key: •••• (set in .env)</span>
+      </div>
+    </section>
+
+    <!-- Logs Panel -->
+    <section class="glass-card panel logs-panel">
+      <div class="panel-head">
+        <h2>Message Log</h2>
+        <p class="muted">Latest notifications sent through this bridge.</p>
+      </div>
+      <div class="log-terminal" id="logTerminal">
+        <div class="muted small">No messages yet.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer-note">CortexHost WhatsApp Bridge — internal notification relay, not affiliated with WhatsApp/Meta.</footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
