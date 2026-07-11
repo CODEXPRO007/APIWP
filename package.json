@@ -1,0 +1,14 @@
+{
+  "name": "cortexhost-whatsapp-gateway",
+  "version": "1.0.0",
+  "description": "Free Realtime WhatsApp Notification Gateway for WHMCS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode": "^1.5.3"
+  }
+}
