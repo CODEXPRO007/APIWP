@@ -2,7 +2,6 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const express = require('express');
 
 const app = express();
-// Forms aur JSON data dono accept karne ke liye middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -11,10 +10,13 @@ let pairingCode = null;
 
 const PORT = process.env.PORT || 3000;
 
+// FULL ANTIBAN & RENDER COMPATIBLE PUPPETEER CONFIGURATION
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
+        // Render environment validation fix
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, 
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -23,14 +25,20 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--single-process',
-            '--disable-gpu'
+            '--disable-gpu',
+            // --- ANTIBAN STEALTH ARGUMENTS ---
+            '--disable-blink-features=AutomationControlled', // Hides webdriver status
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' // Custom human user agent
         ]
     }
 });
 
+// Human-like organic delays bypass script pattern
+const randomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+
 client.on('qr', (qr) => {
     isClientReady = false;
-    console.log('Engine ready. Waiting for Phone Number or QR input...');
+    console.log('Engine ready. Waiting for Phone Number input...');
 });
 
 client.on('ready', () => {
@@ -46,7 +54,7 @@ client.on('disconnected', (reason) => {
     client.initialize();
 });
 
-// Main Dashboard Web UI
+// Dashboard UI
 app.get('/', (req, res) => {
     if (isClientReady) {
         return res.send(`
@@ -71,12 +79,12 @@ app.get('/', (req, res) => {
     res.send(`
         <div style="font-family:sans-serif; text-align:center; padding-top:40px; background:#0b0f19; color:#fff; min-height:100vh; margin:0; padding-left:15px; padding-right:15px; box-sizing:border-box;">
             <h1 style="color:#00d2ff; margin-bottom:5px;">📱 Link CortexHost WhatsApp Gateway</h1>
-            <p style="color:#9ca3af; font-size:15px; margin-top:0;">Single Phone User Jugaad: Bina QR code ke direct link karein</p>
+            <p style="color:#9ca3af; font-size:15px; margin-top:0;">Bina QR code ke direct phone number se link karein</p>
             
             <form action="/request-code" method="POST" style="margin-top:20px; background:#111827; padding:25px; display:inline-block; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.5); border:1px solid #1f2937; text-align:left; max-width:400px; width:100%; box-sizing:border-box;">
                 <label style="display:block; margin-bottom:8px; color:#9ca3af; font-size:14px; font-weight:bold;">WhatsApp Number (Country Code ke sath daalein):</label>
                 <input type="text" name="phone" placeholder="91XXXXXXXXXX" required style="width:100%; padding:12px; border-radius:6px; border:1px solid #374151; background:#1f2937; color:#fff; font-size:16px; margin-bottom:15px; box-sizing:border-box;">
-                <button type="submit" style="width:100%; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:bold; cursor:pointer; transition: 0.2s;">Linking Code Request Karein</button>
+                <button type="submit" style="width:100%; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:6px; font-size:16px; font-weight:bold; cursor:pointer;">Linking Code Request Karein</button>
             </form>
             
             <br>
@@ -94,30 +102,20 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Route: Request Linking Code dynamically via WhatsApp Web internal API
+// Request Linking Code
 app.post('/request-code', async (req, res) => {
     const targetPhone = req.body.phone;
-    
-    if (!targetPhone) {
-        return res.send('Phone number missing. <a href="/">Back to Home</a>');
-    }
+    if (!targetPhone) return res.send('Phone number missing. <a href="/">Back</a>');
 
     try {
         let cleanPhone = targetPhone.replace(/[^0-9]/g, '');
-        
-        // Agar browser instance taiyar hai toh pairing code mangao
         if (client.pupPage) {
+            // Anti-detection buffer wait
+            await new Promise(resolve => setTimeout(resolve, 2000));
             pairingCode = await client.requestPairingCode(cleanPhone);
-            console.log(`Pairing code generated for ${cleanPhone}: ${pairingCode}`);
             res.redirect('/');
         } else {
-            res.send(`
-                <div style="font-family:sans-serif; text-align:center; padding-top:50px; background:#0b0f19; color:#fff; height:100vh;">
-                    <h2>🔄 Engine initializing...</h2>
-                    <p>System abhi reload ho raha hai, kripya 10 seconds baad peeche jakar try karein.</p>
-                    <a href="/" style="color:#00d2ff; text-decoration:none; font-weight:bold;">[ Back to Home ]</a>
-                </div>
-            `);
+            res.send('Engine initializing, please wait 15 seconds and refresh. <a href="/">Back</a>');
         }
     } catch (err) {
         res.send('Error generating code: ' + err.message + '. <a href="/">Go Back</a>');
@@ -128,24 +126,22 @@ app.get('/status-check', (req, res) => {
     res.json({ ready: isClientReady });
 });
 
-// Endpoint called by WHMCS Hooks
+// Safe API endpoint with human simulation logic
 app.post('/send-sms', async (req, res) => {
     const { phone, message } = req.body;
 
-    if (!isClientReady) {
-        return res.status(503).json({ success: false, error: "WhatsApp Gateway is not authenticated yet." });
-    }
-
-    if (!phone || !message) {
-        return res.status(400).json({ success: false, error: "Phone number or message parameter is missing." });
-    }
+    if (!isClientReady) return res.status(503).json({ success: false, error: "Gateway not authenticated." });
+    if (!phone || !message) return res.status(400).json({ success: false, error: "Missing parameters." });
 
     try {
         let cleanPhone = phone.replace(/[^0-9]/g, '');
         const formattedPhone = `${cleanPhone}@c.us`;
 
+        // Antiban: Adds organic typed layout timing behavior simulation
+        await new Promise(resolve => setTimeout(resolve, randomDelay(1000, 3000)));
+        
         await client.sendMessage(formattedPhone, message);
-        return res.json({ success: true, message: "Notification dispatched successfully." });
+        return res.json({ success: true, message: "Dispatched safely." });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
