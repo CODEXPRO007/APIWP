@@ -1,0 +1,23 @@
+{
+  "name": "cortexhost-whatsapp-bridge",
+  "version": "1.0.0",
+  "description": "WhatsApp Web bridge service for WHMCS notifications (CortexHost) - no official WhatsApp Business API required, links via QR code or phone pairing code.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.26.0",
+    "qrcode": "^1.5.3",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^11.1.2",
+    "body-parser": "^1.20.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
