@@ -4,7 +4,7 @@
   "force_update": false,
   "apk_url": "https://yourdomain.com/path/to/app.apk",
   "update_notes": "🌸 Sakura UI Smooth Refresh & Performance Improvements!",
-  "maintenance_mode": true,
+  "maintenance_mode": false,
   "maintenance_message": "⚠️ Servers are currently under maintenance. Please check back later!",
   "enable_root_detection": false,
   "enable_emulator_detection": true
