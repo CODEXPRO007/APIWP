@@ -1,11 +1,10 @@
 {
   "version_code": 1,
-  "version_name": "1.0",
   "force_update": false,
-  "apk_url": "https://yourdomain.com/path/to/app.apk",
-  "update_notes": "🌸 Sakura UI Smooth Refresh & Performance Improvements!",
+  "apk_url": "https://yourwebsite.com/download/VortexUpdate.apk",
+  "update_notes": "🌸 Welcome to Vortex Sakura Engine! Enjoy smooth performance and bug fixes.",
   "maintenance_mode": false,
-  "maintenance_message": "⚠️ Servers are currently under maintenance. Please check back later!",
+  "maintenance_message": "Servers are currently under maintenance. Please check back later!",
   "enable_root_detection": false,
-  "enable_emulator_detection": true
+  "enable_emulator_detection": false
 }
