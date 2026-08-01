@@ -1,0 +1,7 @@
+{
+  "version_code": 2,
+  "version_name": "1.1",
+  "force_update": false,
+  "apk_url": "https://yourdomain.com/path/to/updated_app.apk",
+  "update_notes": "🌸 Sakura UI Smooth Refresh & Performance Improvements!"
+}
