@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vortex Sakura - Auto-Sync Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: #0d0309; color: #ffb6c1; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: #15050f; width: 100%; max-width: 600px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(255, 105, 180, 0.2); border: 1px solid #3a1025; }
+        h2 { text-align: center; color: #ff69b4; margin-bottom: 20px; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 11px; font-weight: 600; color: #ff79c6; margin-bottom: 6px; text-transform: uppercase; }
+        input[type="text"], input[type="number"], input[type="password"], textarea { width: 100%; padding: 12px 16px; background: #12030a; border: 1px solid #3a1025; border-radius: 12px; color: #fff; font-size: 13px; outline: none; transition: 0.3s; }
+        input:focus, textarea:focus { border-color: #ff69b4; box-shadow: 0 0 8px rgba(255, 105, 180, 0.3); }
+        textarea { resize: vertical; height: 75px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 8px; background: #1f0817; padding: 12px; border-radius: 12px; border: 1px solid #3a1025; }
+        .checkbox-group input { width: 18px; height: 18px; accent-color: #ff69b4; cursor: pointer; }
+        .checkbox-group label { margin-bottom: 0; cursor: pointer; color: #fff; font-size: 13px; }
+        .btn { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #d63384, #ff1493); color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 20px; transition: 0.3s; box-shadow: 0 4px 15px rgba(214, 51, 132, 0.4); }
+        .btn:hover { background: linear-gradient(135deg, #ff1493, #ff69b4); transform: translateY(-2px); }
+        .btn:disabled { background: #4a1532; color: #8c5370; cursor: not-allowed; transform: none; box-shadow: none; }
+        .token-box { background: #1f0817; padding: 15px; border-radius: 14px; border: 1px solid #3a1025; margin-bottom: 20px; }
+        .status-msg { text-align: center; margin-top: 15px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🌸 Vortex Live Cloud Panel 🌸</h2>
+    
+    <!-- GitHub Credentials Section -->
+    <div class="token-box">
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label>GitHub Username / Org</label>
+            <input type="text" id="gh_user" placeholder="e.g. CODEXPRO007">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label>Repository Name</label>
+            <input type="text" id="gh_repo" placeholder="e.g. APIWP">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="gh_token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+    </div>
+
+    <!-- App Configuration Fields -->
+    <div class="form-group">
+        <label>Version Code (Int)</label>
+        <input type="number" id="version_code" value="1">
+    </div>
+
+    <div class="form-group">
+        <label>APK Direct Download URL</label>
+        <input type="text" id="apk_url" placeholder="https://yourwebsite.com/download/VortexUpdate.apk">
+    </div>
+
+    <div class="form-group">
+        <label>Update Notes / Description</label>
+        <textarea id="update_notes">🌸 Welcome to Vortex Sakura Engine! Enjoy smooth performance and bug fixes.</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Maintenance Message</label>
+        <input type="text" id="maintenance_message" value="Servers are currently under maintenance. Please check back later!">
+    </div>
+
+    <div class="checkbox-group">
+        <input type="checkbox" id="force_update">
+        <label for="force_update">Force Update (User must update to proceed)</label>
+    </div>
+
+    <div class="checkbox-group" style="margin-top: 10px;">
+        <input type="checkbox" id="maintenance_mode">
+        <label for="maintenance_mode">Enable Maintenance Mode (Lock app for all users)</label>
+    </div>
+
+    <div class="checkbox-group" style="margin-top: 10px;">
+        <input type="checkbox" id="enable_emulator_detection">
+        <label for="enable_emulator_detection">Enable Emulator Detection</label>
+    </div>
+
+    <button class="btn" id="saveBtn" onclick="updateLiveConfig()">Save & Sync to GitHub Live</button>
+    <div class="status-msg" id="statusMsg"></div>
+</div>
+
+<script>
+    // Load saved GitHub credentials from browser localStorage so you don't type them every time
+    window.onload = function() {
+        if(localStorage.getItem('gh_user')) document.getElementById('gh_user').value = localStorage.getItem('gh_user');
+        if(localStorage.getItem('gh_repo')) document.getElementById('gh_repo').value = localStorage.getItem('gh_repo');
+        if(localStorage.getItem('gh_token')) document.getElementById('gh_token').value = localStorage.getItem('gh_token');
+        fetchCurrentConfig();
+    };
+
+    async function fetchCurrentConfig() {
+        const user = document.getElementById('gh_user').value.trim();
+        const repo = document.getElementById('gh_repo').value.trim();
+        if(!user || !repo) return;
+
+        try {
+            let res = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/main/update.json`);
+            if(res.ok) {
+                let data = await res.json();
+                document.getElementById('version_code').value = data.version_code || 1;
+                document.getElementById('apk_url').value = data.apk_url || '';
+                document.getElementById('update_notes').value = data.update_notes || '';
+                document.getElementById('maintenance_message').value = data.maintenance_message || '';
+                document.getElementById('force_update').checked = data.force_update || false;
+                document.getElementById('maintenance_mode').checked = data.maintenance_mode || false;
+                document.getElementById('enable_emulator_detection').checked = data.enable_emulator_detection || false;
+            }
+        } catch(e) {}
+    }
+
+    async function updateLiveConfig() {
+        const user = document.getElementById('gh_user').value.trim();
+        const repo = document.getElementById('gh_repo').value.trim();
+        const token = document.getElementById('gh_token').value.trim();
+        const statusMsg = document.getElementById('statusMsg');
+        const saveBtn = document.getElementById('saveBtn');
+
+        if(!user || !repo || !token) {
+            alert("Please fill your GitHub Username, Repository and Access Token!");
+            return;
+        }
+
+        // Save credentials in browser storage
+        localStorage.setItem('gh_user', user);
+        localStorage.setItem('gh_repo', repo);
+        localStorage.setItem('gh_token', token);
+
+        saveBtn.disabled = true;
+        statusMsg.style.color = "#ffb86c";
+        statusMsg.innerText = "Connecting to GitHub & updating...";
+
+        const configData = {
+            version_code: parseInt(document.getElementById('version_code').value) || 1,
+            force_update: document.getElementById('force_update').checked,
+            apk_url: document.getElementById('apk_url').value.trim(),
+            update_notes: document.getElementById('update_notes').value.trim(),
+            maintenance_mode: document.getElementById('maintenance_mode').checked,
+            maintenance_message: document.getElementById('maintenance_message').value.trim(),
+            enable_root_detection: false,
+            enable_emulator_detection: document.getElementById('enable_emulator_detection').checked
+        };
+
+        const jsonString = JSON.stringify(configData, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(jsonString))); // Base64 encode for GitHub API
+
+        const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/update.json`;
+
+        try {
+            // 1. Get current file SHA (Required by GitHub API to update an existing file)
+            let getRes = await fetch(apiUrl, {
+                headers: { "Authorization": `token ${token}` }
+            });
+            
+            let sha = null;
+            if(getRes.ok) {
+                let fileData = await getRes.json();
+                sha = fileData.sha;
+            }
+
+            // 2. Push/Commit the updated file
+            let bodyData = {
+                message: "Update config via Vortex Web Admin Panel",
+                content: encodedContent
+            };
+            if(sha) bodyData.sha = sha;
+
+            let putRes = await fetch(apiUrl, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(bodyData)
+            });
+
+            if(putRes.ok) {
+                statusMsg.style.color = "#51cf66";
+                statusMsg.innerText = "✅ Successfully synced and live on GitHub!";
+            } else {
+                let errJson = await putRes.json();
+                throw new Error(errJson.message || "Failed to push");
+            }
+        } catch(err) {
+            statusMsg.style.color = "#ff6b6b";
+            statusMsg.innerText = "❌ Error: " + err.message;
+        } finally {
+            saveBtn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+  </html>
+  
